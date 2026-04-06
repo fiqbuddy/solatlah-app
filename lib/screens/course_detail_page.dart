@@ -227,7 +227,7 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Step ${lesson['order']}',
+                                      'Langkah ${lesson['order']}',
                                       style: TextStyle(
                                         fontSize: 11,
                                         color: isLocked

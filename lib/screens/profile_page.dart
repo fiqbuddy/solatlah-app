@@ -16,6 +16,7 @@ class _ProfilePageState extends State<ProfilePage> {
   final phoneController = TextEditingController();
   String? selectedGender;
   bool isLoading = true;
+  DateTime? _selectedDob;
 
   @override
   void initState() {
@@ -30,6 +31,9 @@ class _ProfilePageState extends State<ProfilePage> {
       nameController.text = data['name'] ?? '';
       phoneController.text = data['phone'] ?? '';
       selectedGender = data['gender'];
+      if (data['date_of_birth'] != null) {
+        _selectedDob = DateTime.parse(data['date_of_birth']);
+      }
     }
     setState(() => isLoading = false);
   }
@@ -46,6 +50,7 @@ class _ProfilePageState extends State<ProfilePage> {
         name: nameController.text.trim(),
         phone: phoneController.text.trim(),
         gender: selectedGender ?? '',
+        dob: _selectedDob,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -134,6 +139,44 @@ class _ProfilePageState extends State<ProfilePage> {
                     ],
                     onChanged: (value) =>
                         setState(() => selectedGender = value),
+                  ),
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _selectedDob ?? DateTime(2000),
+                        firstDate: DateTime(1900),
+                        lastDate: DateTime.now(),
+                      );
+                      if (picked != null) setState(() => _selectedDob = picked);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade400),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _selectedDob == null
+                                ? 'Tarikh Lahir'
+                                : '${_selectedDob!.day}/${_selectedDob!.month}/${_selectedDob!.year}',
+                            style: TextStyle(
+                              color: _selectedDob == null
+                                  ? Colors.grey
+                                  : Colors.black,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const Icon(Icons.calendar_today,
+                              color: Colors.grey, size: 20),
+                        ],
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 24),
                   SizedBox(

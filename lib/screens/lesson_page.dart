@@ -4,6 +4,7 @@ import 'package:model_viewer_plus/model_viewer_plus.dart';
 import '../services/learning_service.dart';
 import '../widgets/speech_test_widget.dart';
 import '../widgets/quiz_widget.dart';
+import '../services/profile_service.dart';
 
 class LessonPage extends StatefulWidget {
   final Map<String, dynamic> lesson;
@@ -36,11 +37,13 @@ class _LessonPageState extends State<LessonPage> {
   List<Map<String, dynamic>> _lessonNiat = [];
   int? _expandedNiatIndex;
   String? _testMode; // 'speech' or 'quiz'
+  bool _isKid = false;
 
   @override
   void initState() {
     super.initState();
     _loadAudios();
+    _checkAge();
 
     _audioPlayer.onPlayerStateChanged.listen((state) {
       if (mounted) setState(() => _playerState = state);
@@ -102,6 +105,17 @@ class _LessonPageState extends State<LessonPage> {
         _position = Duration.zero;
         _duration = Duration.zero;
       });
+      await _audioPlayer.setAudioContext(
+        AudioContext(
+          android: AudioContextAndroid(
+            audioFocus: AndroidAudioFocus.gainTransientMayDuck,
+            usageType: AndroidUsageType.media,
+            contentType: AndroidContentType.music,
+            audioMode: AndroidAudioMode.normal,
+            stayAwake: false,
+          ),
+        ),
+      );
       await _audioPlayer.play(UrlSource(url));
     }
   }
@@ -112,10 +126,18 @@ class _LessonPageState extends State<LessonPage> {
     return '$minutes:$seconds';
   }
 
+  Future<void> _checkAge() async {
+    final profileService = ProfileService();
+    await profileService.getProfile();
+    if (mounted) setState(() => _isKid = profileService.isKid);
+  }
+
   Widget _buildAudioCard(Map<String, dynamic> audio, int index) {
+    final url = _isKid
+        ? (audio['audio_url_kids'] ?? audio['audio_url'])
+        : audio['audio_url'];
     final isThisPlaying = _playingIndex == index;
     final isPlaying = isThisPlaying && _playerState == PlayerState.playing;
-    final isPaused = isThisPlaying && _playerState == PlayerState.paused;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -133,7 +155,7 @@ class _LessonPageState extends State<LessonPage> {
           Row(
             children: [
               GestureDetector(
-                onTap: () => _playAudio(audio['audio_url'], index),
+                onTap: () => _playAudio(url, index),
                 child: Container(
                   width: 40,
                   height: 40,
@@ -213,8 +235,10 @@ class _LessonPageState extends State<LessonPage> {
 
   Widget _buildNiatCard(Map<String, dynamic> niat, int index) {
     final isExpanded = _expandedNiatIndex == index;
-    final hasAudio =
-        niat['audio_url'] != null && niat['audio_url'].toString().isNotEmpty;
+    final niatUrl = _isKid
+        ? (niat['audio_url_kids'] ?? niat['audio_url'])
+        : niat['audio_url'];
+    final hasAudio = niatUrl != null && niatUrl.toString().isNotEmpty;
     final isThisPlaying =
         _playingIndex == (100 + index); // offset to avoid clash
     final isPlaying = isThisPlaying && _playerState == PlayerState.playing;
@@ -349,7 +373,7 @@ class _LessonPageState extends State<LessonPage> {
                   if (hasAudio) ...[
                     const SizedBox(height: 12),
                     GestureDetector(
-                      onTap: () => _playAudio(niat['audio_url'], 100 + index),
+                      onTap: () => _playAudio(niatUrl, 100 + index),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                             vertical: 10, horizontal: 16),
@@ -432,7 +456,9 @@ class _LessonPageState extends State<LessonPage> {
     final arabicText = widget.lesson['arabic_text'];
     final transliteration = widget.lesson['transliteration'];
     final translation = widget.lesson['translation'];
-    final audioUrl = widget.lesson['audio_url'];
+    final audioUrl = _isKid
+        ? (widget.lesson['audio_url_kids'] ?? widget.lesson['audio_url'])
+        : widget.lesson['audio_url'];
     final modelUrl = widget.lesson['model_url'];
     final hasNiat = _lessonNiat.isNotEmpty;
     final hasArabic = arabicText != null && arabicText.toString().isNotEmpty;
@@ -461,7 +487,7 @@ class _LessonPageState extends State<LessonPage> {
                 color: const Color(0xFFE8F5E9),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text('Step ${widget.lesson['order']}',
+              child: Text('Langkah ${widget.lesson['order']}',
                   style: const TextStyle(
                       color: Color(0xFF2E7D32),
                       fontWeight: FontWeight.w600,
@@ -741,7 +767,7 @@ class _LessonPageState extends State<LessonPage> {
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                          'Lesson completed! You can still retake for practice.',
+                          'Pembelajaran sudah selesai! Anda masih boleh untuk mengambil ujian semula.',
                           style: TextStyle(
                               color: Color(0xFF2E7D32),
                               fontWeight: FontWeight.w600)),
@@ -752,7 +778,7 @@ class _LessonPageState extends State<LessonPage> {
 
 // Speech test
             // Test section
-            if (widget.lesson['expected_reading'] != null &&
+            if (widget.lesson['Bacaan sebenar'] != null &&
                 _lessonQuestions.isNotEmpty) ...[
               // Both available — let user choose
               if (_testMode == null) ...[

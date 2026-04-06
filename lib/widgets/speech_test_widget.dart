@@ -183,7 +183,7 @@ class _SpeechTestWidgetState extends State<SpeechTestWidget> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Read the text below clearly into your microphone',
+            'Baca ayat dibawah dengan jelas pada mikrofon anda.',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 13, color: Colors.grey),
           ),
@@ -200,7 +200,7 @@ class _SpeechTestWidgetState extends State<SpeechTestWidget> {
             ),
             child: Column(
               children: [
-                const Text('Read this:',
+                const Text('Baca ini:',
                     style: TextStyle(
                         color: Color(0xFF2E7D32),
                         fontSize: 12,
@@ -256,7 +256,9 @@ class _SpeechTestWidgetState extends State<SpeechTestWidget> {
             ),
             const SizedBox(height: 12),
             Text(
-              _isListening ? 'Listening... tap to stop' : 'Tap mic to start',
+              _isListening
+                  ? 'Mendengarkan... tekan untuk menghentikan'
+                  : 'Tekan mikrofon untuk memulai',
               style: TextStyle(
                 color: _isListening ? const Color(0xFFE53935) : Colors.grey,
                 fontSize: 13,
@@ -304,10 +306,10 @@ class _SpeechTestWidgetState extends State<SpeechTestWidget> {
             const SizedBox(height: 8),
             Text(
               _passed!
-                  ? 'Well done! Correct recitation.'
+                  ? 'Tahniah! Bacaan yang betul.'
                   : widget.isAlreadyPassed
-                      ? 'Not quite right, but you already passed this lesson!'
-                      : 'Not quite right. Try again.',
+                      ? 'Tidak begitu tepat, tetapi anda sudah lulus sebelum ini!'
+                      : 'Tidak begitu tepat. Cuba lagi.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,

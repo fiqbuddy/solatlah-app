@@ -21,13 +21,26 @@ class ProfileService {
     required String name,
     required String phone,
     required String gender,
+    DateTime? dob,
   }) async {
-    await client.from('profiles').upsert({
+    final data = {
       'email': currentEmail,
       'name': name,
       'phone': phone,
       'gender': gender,
-    }, onConflict: 'email');
-    _cachedProfile = null; // clear cache after update so it reloads fresh
+    };
+    if (dob != null) {
+      data['date_of_birth'] = dob.toIso8601String().split('T')[0];
+    }
+    await client.from('profiles').upsert(data, onConflict: 'email');
+    _cachedProfile = null;
+  }
+
+  bool get isKid {
+    final profile = _cachedProfile;
+    if (profile == null || profile['date_of_birth'] == null) return false;
+    final dob = DateTime.parse(profile['date_of_birth']);
+    final age = DateTime.now().difference(dob).inDays ~/ 365;
+    return age < 13;
   }
 }
