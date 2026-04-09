@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 class QuizWidget extends StatefulWidget {
   final List<Map<String, dynamic>> questions;
@@ -24,7 +25,6 @@ class _QuizWidgetState extends State<QuizWidget> {
   bool _quizDone = false;
 
   Map<String, dynamic> get _current => widget.questions[_currentIndex];
-
   String get _correctOption => _current['correct_option'];
 
   String _getOptionText(String key) {
@@ -78,6 +78,214 @@ class _QuizWidgetState extends State<QuizWidget> {
     });
   }
 
+  void _showExplanation(BuildContext context) {
+    final explanation = _current['explanation'];
+    final videoId = _current['video_id'];
+
+    if ((explanation == null || explanation.toString().isEmpty) &&
+        (videoId == null || videoId.toString().isEmpty)) return;
+
+    YoutubePlayerController? controller;
+    if (videoId != null && videoId.toString().isNotEmpty) {
+      controller = YoutubePlayerController(
+        initialVideoId: videoId,
+        flags: const YoutubePlayerFlags(
+          autoPlay: false,
+          mute: false,
+          disableDragSeek: false,
+          loop: false,
+        ),
+      );
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        maxChildSize: 0.92,
+        minChildSize: 0.4,
+        builder: (_, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE8F5E9),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.lightbulb,
+                                color: Color(0xFF2E7D32), size: 20),
+                          ),
+                          const SizedBox(width: 10),
+                          const Text(
+                            'Penjelasan Lanjut',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1B5E20),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Question recap
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF4FAF4),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          _current['question'],
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1B5E20),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Correct answer highlight
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F5E9),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFF2E7D32)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.check_circle,
+                                color: Color(0xFF2E7D32), size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Jawapan betul: ${_getOptionText(_correctOption)}',
+                                style: const TextStyle(
+                                  color: Color(0xFF2E7D32),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Explanation text
+                      if (explanation != null &&
+                          explanation.toString().isNotEmpty) ...[
+                        const Text(
+                          'Mengapa?',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1B5E20),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          explanation,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            height: 1.7,
+                            color: Color(0xFF2D2D2D),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+
+                      // YouTube video
+                      if (controller != null) ...[
+                        const Text(
+                          'Video Berkaitan',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1B5E20),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: YoutubePlayer(
+                            controller: controller,
+                            showVideoProgressIndicator: true,
+                            progressIndicatorColor: const Color(0xFF2E7D32),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Video dimainkan dalam aplikasi',
+                          style: TextStyle(color: Colors.grey, fontSize: 11),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+
+                      const SizedBox(height: 20),
+
+                      // Close button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            controller?.dispose();
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2E7D32),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text('Faham, Teruskan'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Color _optionColor(String option) {
     if (!_answered) return Colors.white;
     if (option == _correctOption) return const Color(0xFFE8F5E9);
@@ -123,6 +331,10 @@ class _QuizWidgetState extends State<QuizWidget> {
 
     final total = widget.questions.length;
     final progress = (_currentIndex + 1) / total;
+    final hasExplanation = (_current['explanation'] != null &&
+            _current['explanation'].toString().isNotEmpty) ||
+        (_current['video_id'] != null &&
+            _current['video_id'].toString().isNotEmpty);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -244,7 +456,7 @@ class _QuizWidgetState extends State<QuizWidget> {
             );
           }),
 
-          // Feedback
+          // Feedback + explanation button
           if (_answered) ...[
             const SizedBox(height: 8),
             Container(
@@ -255,32 +467,81 @@ class _QuizWidgetState extends State<QuizWidget> {
                     : const Color(0xFFFFEBEE),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    _selectedOption == _correctOption
-                        ? Icons.check_circle
-                        : Icons.info_outline,
-                    color: _selectedOption == _correctOption
-                        ? const Color(0xFF2E7D32)
-                        : const Color(0xFFE53935),
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _selectedOption == _correctOption
-                          ? 'Betul! Syabas!'
-                          : 'Jawapan betul: ${_getOptionText(_correctOption)}',
-                      style: TextStyle(
+                  Row(
+                    children: [
+                      Icon(
+                        _selectedOption == _correctOption
+                            ? Icons.check_circle
+                            : Icons.info_outline,
                         color: _selectedOption == _correctOption
                             ? const Color(0xFF2E7D32)
                             : const Color(0xFFE53935),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _selectedOption == _correctOption
+                              ? 'Betul! Syabas!'
+                              : 'Jawapan betul: ${_getOptionText(_correctOption)}',
+                          style: TextStyle(
+                            color: _selectedOption == _correctOption
+                                ? const Color(0xFF2E7D32)
+                                : const Color(0xFFE53935),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Explanation button
+                  if (hasExplanation) ...[
+                    const SizedBox(height: 10),
+                    GestureDetector(
+                      onTap: () => _showExplanation(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: _selectedOption == _correctOption
+                                ? const Color(0xFF2E7D32)
+                                : const Color(0xFFE53935),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.lightbulb_outline,
+                              size: 16,
+                              color: _selectedOption == _correctOption
+                                  ? const Color(0xFF2E7D32)
+                                  : const Color(0xFFE53935),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Kenapa? Baca penjelasan',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: _selectedOption == _correctOption
+                                    ? const Color(0xFF2E7D32)
+                                    : const Color(0xFFE53935),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -359,8 +620,6 @@ class _QuizWidgetState extends State<QuizWidget> {
             style: const TextStyle(fontSize: 14, color: Colors.grey),
           ),
           const SizedBox(height: 8),
-
-          // Score bar
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
@@ -373,7 +632,6 @@ class _QuizWidgetState extends State<QuizWidget> {
             ),
           ),
           const SizedBox(height: 24),
-
           Row(
             children: [
               if (!passed) ...[

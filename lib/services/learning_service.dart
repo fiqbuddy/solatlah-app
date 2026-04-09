@@ -177,4 +177,12 @@ class LearningService {
         await client.from('user_badges').select().eq('email', currentEmail);
     return data.length;
   }
+
+  Future<List<Map<String, dynamic>>> getModelHotspots(int lessonId) async {
+    return await client
+        .from('model_hotspots')
+        .select()
+        .eq('lesson_id', lessonId)
+        .order('order', ascending: true);
+  }
 }

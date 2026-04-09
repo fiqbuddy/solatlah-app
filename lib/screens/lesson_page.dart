@@ -35,9 +35,12 @@ class _LessonPageState extends State<LessonPage> {
   List<Map<String, dynamic>> _lessonQuestions = [];
 
   List<Map<String, dynamic>> _lessonNiat = [];
+  List<Map<String, dynamic>> _modelHotspots = [];
+  Map<String, dynamic>? _selectedHotspot;
   int? _expandedNiatIndex;
   String? _testMode; // 'speech' or 'quiz'
   bool _isKid = false;
+  bool _questionsLoaded = false;
 
   @override
   void initState() {
@@ -70,11 +73,15 @@ class _LessonPageState extends State<LessonPage> {
       final niat = await learningService.getLessonNiat(widget.lesson['id']);
       final questions =
           await learningService.getLessonQuestions(widget.lesson['id']);
+      final hotspots =
+          await learningService.getModelHotspots(widget.lesson['id']);
       if (mounted)
         setState(() {
           _lessonAudios = audios;
           _lessonNiat = niat;
           _lessonQuestions = questions;
+          _questionsLoaded = true;
+          _modelHotspots = hotspots;
         });
     } catch (e) {
       debugPrint('Error loading: $e');
@@ -83,6 +90,7 @@ class _LessonPageState extends State<LessonPage> {
           _lessonAudios = [];
           _lessonNiat = [];
           _lessonQuestions = [];
+          _questionsLoaded = true;
         });
     }
   }
@@ -725,11 +733,15 @@ class _LessonPageState extends State<LessonPage> {
                         ],
                       ),
                     ),
+
+                    // Model viewer
                     ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(16),
-                        bottomRight: Radius.circular(16),
-                      ),
+                      borderRadius: _modelHotspots.isEmpty
+                          ? const BorderRadius.only(
+                              bottomLeft: Radius.circular(16),
+                              bottomRight: Radius.circular(16),
+                            )
+                          : BorderRadius.zero,
                       child: SizedBox(
                         height: 300,
                         child: ModelViewer(
@@ -744,6 +756,125 @@ class _LessonPageState extends State<LessonPage> {
                         ),
                       ),
                     ),
+
+                    // Hotspot info panel
+                    if (_modelHotspots.isNotEmpty) ...[
+                      const Divider(height: 1),
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Maklumat Pose',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1B5E20),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+
+                            // Hotspot selector chips
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: _modelHotspots.map((hotspot) {
+                                final isSelected =
+                                    _selectedHotspot?['id'] == hotspot['id'];
+                                return GestureDetector(
+                                  onTap: () => setState(() => _selectedHotspot =
+                                      isSelected ? null : hotspot),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 14, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? const Color(0xFF2E7D32)
+                                          : const Color(0xFFE8F5E9),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: const Color(0xFF2E7D32),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.info_outline,
+                                          size: 14,
+                                          color: isSelected
+                                              ? Colors.white
+                                              : const Color(0xFF2E7D32),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          hotspot['title'],
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: isSelected
+                                                ? Colors.white
+                                                : const Color(0xFF2E7D32),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+
+                            // Selected hotspot description
+                            if (_selectedHotspot != null) ...[
+                              const SizedBox(height: 12),
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF4FAF4),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                      color: const Color(0xFF2E7D32)
+                                          .withOpacity(0.3)),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.info,
+                                            color: Color(0xFF2E7D32), size: 16),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          _selectedHotspot!['title'],
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF1B5E20),
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      _selectedHotspot!['description'],
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        height: 1.6,
+                                        color: Color(0xFF2D2D2D),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -778,7 +909,11 @@ class _LessonPageState extends State<LessonPage> {
 
 // Speech test
             // Test section
-            if (widget.lesson['Bacaan sebenar'] != null &&
+            // Test section
+            if (!_questionsLoaded) ...[
+              const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF2E7D32))),
+            ] else if (widget.lesson['expected_reading'] != null &&
                 _lessonQuestions.isNotEmpty) ...[
               // Both available — let user choose
               if (_testMode == null) ...[
@@ -870,7 +1005,6 @@ class _LessonPageState extends State<LessonPage> {
                   ],
                 ),
               ] else ...[
-                // Back button
                 GestureDetector(
                   onTap: () => setState(() => _testMode = null),
                   child: Row(
@@ -912,7 +1046,6 @@ class _LessonPageState extends State<LessonPage> {
                   ),
               ],
             ] else if (widget.lesson['expected_reading'] != null) ...[
-              // Speech only
               SpeechTestWidget(
                 expectedText: widget.lesson['expected_reading'],
                 isAlreadyPassed: widget.isCompleted,
@@ -926,7 +1059,6 @@ class _LessonPageState extends State<LessonPage> {
                 },
               ),
             ] else if (_lessonQuestions.isNotEmpty) ...[
-              // Quiz only
               QuizWidget(
                 questions: _lessonQuestions,
                 isAlreadyPassed: widget.isCompleted,
