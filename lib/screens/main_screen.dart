@@ -5,6 +5,7 @@ import 'mock_page.dart';
 import 'profile_page.dart';
 import 'login_page.dart';
 import 'learning_page.dart';
+import 'knowledge_page.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -24,6 +25,7 @@ class _MainScreenState extends State<MainScreen> {
     _pages = [
       DashboardPage(onGoToLearn: () => setState(() => _currentIndex = 1)),
       const LearningPage(),
+      const KnowledgePage(),
       const MockPage(),
       const ProfilePage(),
     ];
@@ -51,6 +53,8 @@ class _MainScreenState extends State<MainScreen> {
               icon: Icon(Icons.dashboard), label: "Dashboard"),
           BottomNavigationBarItem(
               icon: Icon(Icons.school_rounded), label: "Learning"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.auto_stories), label: "Ilmu"),
           BottomNavigationBarItem(icon: Icon(Icons.chat), label: "Mock"),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
         ],
